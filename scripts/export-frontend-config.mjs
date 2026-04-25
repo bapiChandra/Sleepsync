@@ -19,11 +19,14 @@ function getPreferredDeployment() {
 }
 
 const deployment = getPreferredDeployment();
+const fallbackContractId = process.env.VITE_CONTRACT_ID || deployment?.contractId || "";
+const fallbackNetwork = process.env.STELLAR_NETWORK || deployment?.network || "testnet";
+
 const fileContents = `export const sleepSyncConfig = ${JSON.stringify(
   {
     contractName: "SleepSync",
-    fallbackContractId: deployment?.contractId || "",
-    fallbackNetwork: deployment?.network || "testnet",
+    fallbackContractId,
+    fallbackNetwork,
     limits: {
       minSessionMinutes: 5,
       maxSessionMinutes: 480,

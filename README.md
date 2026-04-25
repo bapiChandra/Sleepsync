@@ -1,73 +1,54 @@
 # SleepSync
 
-[![CI](https://github.com/bapich/SleepSync-level-4/actions/workflows/ci.yml/badge.svg)](https://github.com/bapich/SleepSync-level-4/actions/workflows/ci.yml)
+[![CI](https://github.com/bapich/level-4-Sleepsync/actions/workflows/ci.yml/badge.svg)](https://github.com/bapich/level-4-Sleepsync/actions/workflows/ci.yml)
 
-SleepSync is a Stellar Soroban sleep-discipline dApp that turns weekly rest goals into verifiable on-chain activity. A user connects a Freighter wallet, creates a public sleep profile, sets a weekly sleep-minute goal, logs sleep sessions, builds an on-time bedtime streak, and reviews dashboard metrics powered by the deployed Soroban contract.
+SleepSync is a production-ready Stellar Soroban dApp for building accountable sleep discipline. It lets a user connect a Freighter wallet, create an on-chain sleep profile, set a weekly rest goal, log sleep sessions, and review recovery metrics generated from contract state.
 
 - Live demo: https://sleepsync-level-4.vercel.app
-- Public repository: https://github.com/bapich/SleepSync-level-4
+- GitHub repository: https://github.com/bapich/level-4-Sleepsync
 - MVP video: https://drive.google.com/file/d/18eCFxW8KkVGKhuTWgdlSQWu2hJvEFe0-/view?usp=sharing
 - Network: Stellar Testnet
-- Wallet: Freighter
-- Frontend: Vite, React, Stellar SDK
+- Contract ID: `CCD376AONWVQF2EPK6BMLS3PDBMIWVWHV4DIAZVIDJZEUOK6HPYAE2EH`
+- Frontend: React, Vite, Stellar SDK, Freighter
 - Smart contract: Rust, Soroban SDK
 
 ## Overview
 
-SleepSync focuses on consistency rather than passive tracking. The contract stores each wallet's sleep profile, weekly goal, total sessions, current week progress, consistency score, recovery score, and bedtime streak. The frontend exposes those actions through a responsive dashboard with wallet signing, sleep-session logging, progress cards, and a public Soroban event feed.
+SleepSync focuses on consistency rather than passive tracking. The contract stores each wallet's profile, weekly sleep target, total rest minutes, current week progress, bedtime streak, consistency score, recovery score, and session history. The frontend presents those actions through a responsive dashboard with wallet signing, live Soroban reads, contract event summaries, and explorer links.
 
-Core user flow:
+Core flow:
 
 1. Connect a Freighter wallet on Stellar Testnet.
-2. Create or update a SleepSync profile with a display name and weekly goal.
-3. Log a sleep session with type, duration, and on-time bedtime status.
-4. Track weekly minutes, streak, consistency score, recovery score, and total sessions.
-5. Inspect recent contract events and explorer links from the public feed.
+2. Create or update a SleepSync profile.
+3. Set a weekly sleep-minute goal.
+4. Log sleep sessions with duration, sleep type, and bedtime status.
+5. Track weekly progress, streak, consistency, recovery, and recent on-chain activity.
 
-## Staging
+## Screenshots
 
-The screenshots below are shown in the same sequence used for submission review.
-
-### 1. Deployed Dashboard
+### Deployed Dashboard
 
 ![SleepSync deployed dashboard](./assets/01-hero-dashboard.png)
 
-### 2. Mobile Responsive View
+### Mobile Responsive View
 
-![SleepSync mobile responsive view](./assets/02-mobile-responsive.png)
+![SleepSync mobile responsive dashboard](./assets/02-mobile-responsive.png)
 
-### 3. CI/CD Pipeline
+### CI/CD Pipeline
 
 ![SleepSync CI/CD pipeline](./assets/03-cicd-pipeline.png)
 
-GitHub Actions badge:
+## Deployment
 
-[![CI](https://github.com/bapich/SleepSync-level-4/actions/workflows/ci.yml/badge.svg)](https://github.com/bapich/SleepSync-level-4/actions/workflows/ci.yml)
-
-## Project Requirements
-
-- Public GitHub repository: complete
-- README documentation: complete
-- Minimum 8+ meaningful commits: complete
-- Live demo deployed on Vercel: complete
-- Mobile responsive screenshot: included above
-- CI/CD screenshot and badge: included above
-- Contract addresses and transaction hashes: included below
-- Inter-contract calls: not used
-- Custom token or pool deployment: not used
-- MVP video link: included above
-
-## Deployment Details
-
-Frontend deployment:
+### Frontend
 
 - Provider: Vercel
 - Project name: `sleepsync-level-4`
-- Live URL: https://sleepsync-level-4.vercel.app
+- Production URL: https://sleepsync-level-4.vercel.app
 - Build command: `npm run build:web`
 - Output directory: `frontend/dist`
 
-Contract deployment:
+### Smart Contract
 
 - Contract name: `SleepSync`
 - Contract alias: `sleep_sync`
@@ -78,23 +59,22 @@ Contract deployment:
 - Contract explorer: https://lab.stellar.org/r/testnet/contract/CCD376AONWVQF2EPK6BMLS3PDBMIWVWHV4DIAZVIDJZEUOK6HPYAE2EH
 - WASM upload transaction hash: `6c67f75c68a02a5d90c0e1d9c78ebcdfcc7d817568b5a89b9a82c1ad64c00b76`
 - Contract deploy transaction hash: `42a7bd0f7ef1c1eaae3e64f03200e5c5ee0af8fe0133d6ade8d4d1f0716edc5d`
-- Inter-contract calls: none
-- Custom token address: not applicable
-- Pool address: not applicable
 
-The deployment record is stored in [`deployments/testnet.json`](./deployments/testnet.json). The frontend fallback contract config is generated into [`frontend/src/lib/contract-config.js`](./frontend/src/lib/contract-config.js).
+The deployment record is stored in [`deployments/testnet.json`](./deployments/testnet.json), and the frontend fallback contract config is generated into [`frontend/src/lib/contract-config.js`](./frontend/src/lib/contract-config.js).
 
-## Contract Interface
+## Contract Implementation
+
+SleepSync is implemented as an advanced Soroban contract with profile management, session persistence, weekly goal tracking, streak calculation, recovery scoring, consistency scoring, validation guards, and contract events.
 
 Public methods:
 
-- `save_profile(sleeper, display_name, weekly_goal_minutes)`: creates or updates a wallet sleep profile.
-- `update_weekly_goal(sleeper, new_goal_minutes)`: updates the profile's weekly sleep target.
-- `log_session(sleeper, sleep_type, minutes_slept, slept_on_time)`: records a sleep session and updates dashboard metrics.
-- `has_profile(sleeper)`: checks whether a wallet already has a profile.
-- `get_dashboard(sleeper)`: returns profile, progress, streak, consistency, and recovery data.
-- `get_session_count(sleeper)`: returns the number of logged sessions for a wallet.
-- `get_session(sleeper, index)`: returns one stored sleep-session record.
+- `save_profile(sleeper, display_name, weekly_goal_minutes)`
+- `update_weekly_goal(sleeper, new_goal_minutes)`
+- `log_session(sleeper, sleep_type, minutes_slept, slept_on_time)`
+- `has_profile(sleeper)`
+- `get_dashboard(sleeper)`
+- `get_session_count(sleeper)`
+- `get_session(sleeper, index)`
 
 Events:
 
@@ -103,12 +83,40 @@ Events:
 - `sleep_logged`
 - `weekly_goal_reached`
 
-Validation rules:
+Validation:
 
-- Display names must be 3-32 characters.
-- Sleep session labels must be 3-48 characters.
-- Sleep session duration must be 5-480 minutes.
-- Weekly sleep goals must be 30-5000 minutes.
+- Display names: 3-32 characters
+- Sleep labels: 3-48 characters
+- Session duration: 5-480 minutes
+- Weekly goals: 30-5000 minutes
+
+## Requirements Status
+
+| Requirement | Status |
+| --- | --- |
+| Public GitHub repository | Complete |
+| README with complete documentation | Complete |
+| Live deployed demo | Complete: https://sleepsync-level-4.vercel.app |
+| CI/CD running | Complete: GitHub Actions badge and screenshot included |
+| Mobile responsive | Complete: screenshot included |
+| Minimum 8+ meaningful commits | Complete |
+| Production-ready advanced contract implementation | Complete |
+| Inter-contract call working | Not applicable: SleepSync does not require inter-contract calls |
+| Custom token or pool deployed | Not applicable: no custom token or pool is used |
+
+## Submission Checklist
+
+- Public GitHub repository: https://github.com/bapich/level-4-Sleepsync
+- Live demo link: https://sleepsync-level-4.vercel.app
+- MVP video: https://drive.google.com/file/d/18eCFxW8KkVGKhuTWgdlSQWu2hJvEFe0-/view?usp=sharing
+- Mobile responsive screenshot: [`assets/02-mobile-responsive.png`](./assets/02-mobile-responsive.png)
+- CI/CD screenshot: [`assets/03-cicd-pipeline.png`](./assets/03-cicd-pipeline.png)
+- CI/CD badge: included at the top of this README
+- Contract address: `CCD376AONWVQF2EPK6BMLS3PDBMIWVWHV4DIAZVIDJZEUOK6HPYAE2EH`
+- WASM upload transaction: `6c67f75c68a02a5d90c0e1d9c78ebcdfcc7d817568b5a89b9a82c1ad64c00b76`
+- Contract deploy transaction: `42a7bd0f7ef1c1eaae3e64f03200e5c5ee0af8fe0133d6ade8d4d1f0716edc5d`
+- Inter-contract calls: not used
+- Token or pool address: not applicable
 
 ## Repository Structure
 
@@ -117,51 +125,32 @@ SleepSync-level-4/
 |-- contracts/sleep_sync/        # Rust Soroban smart contract
 |-- frontend/                    # Vite React dApp
 |-- scripts/                     # Deployment and config export scripts
-|-- deployments/testnet.json     # Current Stellar Testnet deployment
-|-- assets/                      # Submission screenshots and badges
+|-- deployments/testnet.json     # Stellar Testnet deployment record
+|-- assets/                      # Submission screenshots
 |-- .github/workflows/ci.yml     # GitHub Actions pipeline
-`-- vercel.json                  # Vercel frontend routing/build config
+`-- vercel.json                  # Vercel build configuration
 ```
 
 ## Local Development
 
-Install dependencies:
-
 ```bash
 npm install
-```
-
-Run the frontend:
-
-```bash
 npm run dev
 ```
 
-Run contract tests:
+Contract tests:
 
 ```bash
 npm run contract:test
 ```
 
-Build the contract WASM:
-
-```bash
-npm run contract:wasm
-```
-
-Export the deployed contract config for the frontend:
-
-```bash
-npm run export:frontend
-```
-
-Build the frontend:
+Frontend build:
 
 ```bash
 npm run build:web
 ```
 
-Run the full verification path:
+Full verification:
 
 ```bash
 npm run verify
@@ -186,7 +175,7 @@ VITE_STELLAR_NETWORK_PASSPHRASE="Test SDF Network ; September 2015"
 VITE_CONTRACT_ID=
 ```
 
-Build and deploy the contract, then export frontend config:
+Build, deploy, export frontend config, and build the web app:
 
 ```bash
 npm run contract:build
@@ -194,21 +183,3 @@ npm run contract:deploy
 npm run export:frontend
 npm run build:web
 ```
-
-## Verification
-
-Expected checks before submission:
-
-```bash
-npm run contract:test
-npm run lint
-npm run build:web
-```
-
-The CI pipeline runs contract tests, builds the Soroban WASM artifact, installs frontend dependencies, generates the frontend contract config, builds the Vite app, and uploads the frontend bundle artifact.
-
-## Troubleshooting
-
-- If Freighter is not detected, open the app in a Chromium-based browser with the Freighter extension enabled.
-- If the dashboard stays empty after connecting, confirm Freighter is using Stellar Testnet.
-- If contract reads fail, rerun `npm run export:frontend` after updating `deployments/testnet.json` or `VITE_CONTRACT_ID`.

@@ -94,7 +94,7 @@ export function hasContractConfig() {
 }
 
 export function isFreighterInstalled() {
-  return typeof window !== "undefined";
+  return typeof window !== "undefined" && typeof window.freighterApi !== "undefined";
 }
 
 export function getNetworkLabel(networkPassphrase) {
@@ -131,7 +131,7 @@ export function formatMinutes(totalMinutes) {
 
 export function formatDate(unixSeconds) {
   if (!unixSeconds) {
-  return "No sleep sessions logged yet";
+    return "No sleep sessions logged yet";
   }
 
   return new Intl.DateTimeFormat("en", {

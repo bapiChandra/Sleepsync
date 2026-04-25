@@ -1,0 +1,10 @@
+{
+  "contractName": "SleepSync",
+  "contractId": "CCD376AONWVQF2EPK6BMLS3PDBMIWVWHV4DIAZVIDJZEUOK6HPYAE2EH",
+  "network": "testnet",
+  "sourceAccount": "alice",
+  "alias": "sleep_sync",
+  "deployedAt": "2026-04-25T08:39:17.430Z",
+  "wasmUploadTransactionHash": "6c67f75c68a02a5d90c0e1d9c78ebcdfcc7d817568b5a89b9a82c1ad64c00b76",
+  "deployTransactionHash": "42a7bd0f7ef1c1eaae3e64f03200e5c5ee0af8fe0133d6ade8d4d1f0716edc5d"
+}

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 700" fill="none">
+  <rect width="1180" height="700" rx="32" fill="#11182d"/>
+  <rect x="26" y="26" width="1128" height="648" rx="22" fill="#1c2541" stroke="#384365"/>
+  <circle cx="72" cy="64" r="9" fill="#d97b70"/>
+  <circle cx="104" cy="64" r="9" fill="#d5b270"/>
+  <circle cx="136" cy="64" r="9" fill="#8894cb"/>
+  <text x="178" y="71" fill="#bcc6e3" font-family="Consolas, monospace" font-size="24">PowerShell - npm run verify</text>
+  <text x="70" y="132" fill="#f8f4ec" font-family="Consolas, monospace" font-size="28">&gt; sleepsync@1.0.0 verify</text>
+  <text x="70" y="172" fill="#f8f4ec" font-family="Consolas, monospace" font-size="28">&gt; cargo test &amp;&amp; npm run build:web</text>
+  <text x="70" y="248" fill="#fffaf1" font-family="Consolas, monospace" font-size="30">SleepSync</text>
+  <text x="96" y="304" fill="#c9f0d3" font-family="Consolas, monospace" font-size="28">OK creates a sleep profile and dashboard</text>
+  <text x="96" y="348" fill="#c9f0d3" font-family="Consolas, monospace" font-size="28">OK logs sleep sessions and grows bedtime streaks</text>
+  <text x="96" y="392" fill="#c9f0d3" font-family="Consolas, monospace" font-size="28">OK resets weekly sleep progress after the boundary</text>
+  <text x="96" y="436" fill="#c9f0d3" font-family="Consolas, monospace" font-size="28">OK rejects invalid profiles, goals, and session minutes</text>
+  <text x="96" y="480" fill="#c9f0d3" font-family="Consolas, monospace" font-size="28">OK emits weekly goal reached only once per crossing</text>
+  <text x="70" y="570" fill="#d5b270" font-family="Consolas, monospace" font-size="32">8 contract tests passing</text>
+  <text x="70" y="626" fill="#bcc6e3" font-family="Consolas, monospace" font-size="22">Sleep discipline tracker verification artifact.</text>
+</svg>

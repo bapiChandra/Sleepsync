@@ -1,0 +1,23 @@
+{
+  "name": "sleepsync",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "npm --workspace frontend run dev",
+    "contract:test": "cargo test",
+    "contract:build": "stellar contract build",
+    "contract:wasm": "cargo build --locked --target wasm32v1-none --release -p sleep_sync",
+    "contract:deploy": "node scripts/deploy-stellar.mjs",
+    "export:frontend": "node scripts/export-frontend-config.mjs",
+    "build": "npm run contract:build && npm run export:frontend && npm --workspace frontend run build",
+    "build:web": "npm run export:frontend && npm --workspace frontend run build",
+    "lint": "npm --workspace frontend run lint",
+    "verify": "npm run contract:test && npm run contract:wasm && npm run build:web"
+  },
+  "devDependencies": {
+    "dotenv": "^16.4.5"
+  }
+}

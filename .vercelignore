@@ -1,0 +1,15 @@
+.git
+.github
+artifacts
+assets
+cache
+contracts
+node_modules
+frontend/node_modules
+target
+test
+.env
+frontend/.env
+mvp.mp4
+screen-record.mp4
+ui.png

@@ -4,7 +4,7 @@
 
 SleepSync is a Stellar Soroban sleep-discipline dApp that turns weekly rest goals into verifiable on-chain activity. A user connects a Freighter wallet, creates a public sleep profile, sets a weekly sleep-minute goal, logs sleep sessions, builds an on-time bedtime streak, and reviews dashboard metrics powered by the deployed Soroban contract.
 
-- Live demo: https://sleepsync-one.vercel.app
+- Live demo: https://sleepsync-level-4.vercel.app
 - Public repository: https://github.com/bapich/SleepSync-level-4
 - MVP video: https://drive.google.com/file/d/18eCFxW8KkVGKhuTWgdlSQWu2hJvEFe0-/view?usp=sharing
 - Network: Stellar Testnet
@@ -62,8 +62,8 @@ GitHub Actions badge:
 Frontend deployment:
 
 - Provider: Vercel
-- Project name: `sleepsync`
-- Live URL: https://sleepsync-one.vercel.app
+- Project name: `sleepsync-level-4`
+- Live URL: https://sleepsync-level-4.vercel.app
 - Build command: `npm run build:web`
 - Output directory: `frontend/dist`
 

@@ -58,6 +58,9 @@ jobs:
       - name: Generate frontend contract config
         run: npm run export:frontend
 
+      - name: Run frontend lint placeholder
+        run: npm run lint
+
       - name: Build Vite frontend
         run: npm run build:web
         env:

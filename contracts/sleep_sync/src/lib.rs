@@ -456,6 +456,34 @@ mod test {
     }
 
     #[test]
+    fn accepts_boundary_values_for_profile_and_session() {
+        let (env, client, sleeper) = setup();
+
+        client.save_profile(&sleeper, &text(&env, "Min"), &MIN_GOAL_MINUTES);
+        client.log_session(
+            &sleeper,
+            &text(&env, "Nap"),
+            &MIN_SESSION_MINUTES,
+            &true,
+        );
+        client.update_weekly_goal(&sleeper, &MAX_GOAL_MINUTES);
+        client.log_session(
+            &sleeper,
+            &text(&env, "Maximum Recovery Window"),
+            &MAX_SESSION_MINUTES,
+            &false,
+        );
+
+        let dashboard = client.get_dashboard(&sleeper);
+        assert_eq!(dashboard.weekly_goal_minutes, MAX_GOAL_MINUTES);
+        assert_eq!(
+            dashboard.total_minutes,
+            MIN_SESSION_MINUTES + MAX_SESSION_MINUTES
+        );
+        assert_eq!(dashboard.session_count, 2);
+    }
+
+    #[test]
     fn goal_reached_event_emits_once_on_threshold_crossing() {
         let (env, client, sleeper) = setup();
 

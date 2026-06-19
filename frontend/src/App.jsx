@@ -477,15 +477,6 @@ export default function App() {
 
           <aside className="hero-instrument">
             <RecoveryDial value={dashboard?.recoveryScore || 0} progress={weeklyProgress} />
-            <div className="instrument-copy">
-              <p>Weekly goal</p>
-              <strong>{dashboard ? `${weeklyProgress}%` : "Not started"}</strong>
-              <span>
-                {dashboard
-                  ? `${formatMinutes(dashboard.minutesThisWeek)} of ${formatMinutes(dashboard.weeklyGoalMinutes)}`
-                  : "Create a profile to begin"}
-              </span>
-            </div>
           </aside>
         </section>
 

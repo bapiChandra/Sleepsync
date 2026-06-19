@@ -80,16 +80,25 @@ function MetricCard({ label, value, note, loading = false, tone = "light" }) {
 
 function RecoveryDial({ value, progress }) {
   const score = Number(value || 0);
+  const strokeDashoffset = 282.7 - (282.7 * score) / 100;
   return (
-    <div className="recovery-dial" style={{ "--score": `${score}%`, "--goal": `${progress || 0}%` }}>
-      <div className="dial-orbit">
-        <span className="orbit-dot orbit-one" />
-        <span className="orbit-dot orbit-two" />
-      </div>
+    <div className="recovery-dial">
+      <svg className="dial-svg" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="45" fill="none" stroke="#1f1f23" strokeWidth="2" />
+        <circle
+          cx="50"
+          cy="50"
+          r="45"
+          fill="none"
+          stroke="#00f0ff"
+          strokeWidth="4"
+          strokeDasharray="282.7"
+          strokeDashoffset={strokeDashoffset}
+        />
+      </svg>
       <div className="dial-core">
-        <p>Recovery</p>
-        <strong>{score}</strong>
-        <span>/100</span>
+        <p>Recovery Index</p>
+        <strong>{score}%</strong>
       </div>
     </div>
   );

@@ -446,20 +446,13 @@ export default function App() {
           <span className="network-pill">
             {wallet.networkPassphrase ? getNetworkLabel(wallet.networkPassphrase) : "Stellar Testnet"}
           </span>
-          {freighterInstalled ? (
-            <button className="button button-primary" onClick={handleConnectWallet} disabled={wallet.isConnecting}>
-              {wallet.isConnecting ? "Connecting..." : wallet.account ? shortAddress(wallet.account) : "Connect wallet"}
-            </button>
-          ) : (
-            <a 
-              className="button button-primary" 
-              href="https://www.freighter.app/" 
-              target="_blank" 
-              rel="noreferrer"
-            >
-              Get Freighter
-            </a>
-          )}
+          <button 
+            className="button button-primary" 
+            onClick={handleConnectWallet} 
+            disabled={wallet.isConnecting}
+          >
+            {wallet.isConnecting ? "Connecting..." : wallet.account ? shortAddress(wallet.account) : "Connect wallet"}
+          </button>
         </div>
       </header>
 

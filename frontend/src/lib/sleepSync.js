@@ -94,7 +94,7 @@ export function hasContractConfig() {
 }
 
 export function isFreighterInstalled() {
-  return typeof window !== "undefined" && typeof window.freighterApi !== "undefined";
+  return typeof window !== "undefined" && (typeof window.freighterApi !== "undefined" || window.stellarWebKit || window.stellar);
 }
 
 export function getNetworkLabel(networkPassphrase) {

@@ -313,7 +313,8 @@ export default function App() {
     saveProfileMutation.isPending || updateGoalMutation.isPending || logSessionMutation.isPending;
 
   async function handleConnectWallet() {
-    if (!freighterInstalled) {
+    const isInstalled = isFreighterInstalled();
+    if (!isInstalled) {
       setWallet((current) => ({
         ...current,
         error: "Freighter is not installed in this browser."

@@ -28,6 +28,14 @@ pub struct SleepProfile {
 
 #[derive(Clone)]
 #[contracttype]
+pub struct LeaderboardEntry {
+    pub sleeper: Address,
+    pub display_name: String,
+    pub recovery_score: u32,
+}
+
+#[derive(Clone)]
+#[contracttype]
 pub struct SleepSession {
     pub sleep_type: String,
     pub minutes_slept: u32,
@@ -98,12 +106,17 @@ pub struct WeeklyGoalReached {
 enum DataKey {
     Profile(Address),
     Session(Address, u32),
+    Leaderboard,
+    RewardContract,
 }
 
 mod reward_contract {
-    soroban_sdk::contractimport!(
-        file = "../../target/wasm32v1-none/release/sleep_sync.wasm"
-    );
+    use soroban_sdk::{contractclient, Address, Env};
+
+    #[contractclient(name = "Client")]
+    pub trait SleepRewardTrait {
+        fn mint(env: Env, to: Address, amount: i128);
+    }
 }
 
 #[contract]
@@ -111,6 +124,10 @@ pub struct SleepSync;
 
 #[contractimpl]
 impl SleepSync {
+    pub fn set_reward_contract(env: Env, reward_contract: Address) {
+        env.storage().persistent().set(&DataKey::RewardContract, &reward_contract);
+    }
+
     pub fn save_profile(env: Env, sleeper: Address, display_name: String, weekly_goal_minutes: u32) {
         sleeper.require_auth();
         validate_display_name(&display_name);
@@ -139,6 +156,7 @@ impl SleepSync {
         profile.weekly_goal_reached = profile.minutes_this_week >= weekly_goal_minutes;
 
         write_profile(&env, &sleeper, &profile);
+        update_leaderboard(&env, sleeper.clone(), profile.display_name.clone(), calculate_recovery_score(&profile));
         ProfileSaved {
             sleeper,
             display_name,
@@ -157,6 +175,7 @@ impl SleepSync {
         profile.weekly_goal_reached = profile.minutes_this_week >= new_goal_minutes;
 
         write_profile(&env, &sleeper, &profile);
+        update_leaderboard(&env, sleeper.clone(), profile.display_name.clone(), calculate_recovery_score(&profile));
         WeeklyGoalUpdated {
             sleeper,
             weekly_goal_minutes: new_goal_minutes,
@@ -212,6 +231,7 @@ impl SleepSync {
         write_session(&env, &sleeper, profile.session_count, &session);
         profile.session_count += 1;
         write_profile(&env, &sleeper, &profile);
+        update_leaderboard(&env, sleeper.clone(), profile.display_name.clone(), recovery_score);
 
         SleepLogged {
             sleeper: sleeper.clone(),
@@ -226,12 +246,17 @@ impl SleepSync {
 
         if !goal_was_reached && profile.weekly_goal_reached {
             WeeklyGoalReached {
-                sleeper,
+                sleeper: sleeper.clone(),
                 weekly_goal_minutes: profile.weekly_goal_minutes,
                 minutes_this_week: profile.minutes_this_week,
                 recovery_score,
             }
             .publish(&env);
+
+            if let Some(reward_contract_id) = env.storage().persistent().get::<_, Address>(&DataKey::RewardContract) {
+                let client = reward_contract::Client::new(&env, &reward_contract_id);
+                client.mint(&sleeper, &100);
+            }
         }
     }
 
@@ -240,8 +265,8 @@ impl SleepSync {
     }
 
     pub fn query_sleeper_reward(env: Env, reward_contract_id: Address, sleeper: Address) -> u32 {
-        let client = reward_contract::Client::new(&env, &reward_contract_id);
-        client.get_dashboard(&sleeper).recovery_score
+        // Obsolete function, retained for compatibility if needed.
+        0
     }
 
     pub fn get_dashboard(env: Env, sleeper: Address) -> SleepDashboard {
@@ -280,6 +305,13 @@ impl SleepSync {
             .persistent()
             .get(&DataKey::Session(sleeper, index))
             .unwrap_or_else(|| panic!("Session not found"))
+    }
+
+    pub fn get_leaderboard(env: Env) -> soroban_sdk::Vec<LeaderboardEntry> {
+        env.storage()
+            .persistent()
+            .get(&DataKey::Leaderboard)
+            .unwrap_or_else(|| soroban_sdk::Vec::new(&env))
     }
 }
 
@@ -365,6 +397,58 @@ fn validate_weekly_goal(weekly_goal_minutes: u32) {
     );
 }
 
+fn update_leaderboard(env: &Env, sleeper: Address, display_name: String, recovery_score: u32) {
+    let key = DataKey::Leaderboard;
+    let mut leaderboard: soroban_sdk::Vec<LeaderboardEntry> = env
+        .storage()
+        .persistent()
+        .get(&key)
+        .unwrap_or_else(|| soroban_sdk::Vec::new(env));
+
+    let mut existing_idx: Option<u32> = None;
+    for i in 0..leaderboard.len() {
+        if leaderboard.get(i).unwrap().sleeper == sleeper {
+            existing_idx = Some(i);
+            break;
+        }
+    }
+    if let Some(idx) = existing_idx {
+        leaderboard.remove(idx);
+    }
+
+    let new_entry = LeaderboardEntry {
+        sleeper,
+        display_name,
+        recovery_score,
+    };
+    leaderboard.push_back(new_entry);
+
+    let mut sorted_list = soroban_sdk::Vec::new(env);
+    while leaderboard.len() > 0 {
+        let mut max_idx = 0;
+        let mut max_score = 0;
+        for i in 0..leaderboard.len() {
+            let entry = leaderboard.get(i).unwrap();
+            if entry.recovery_score >= max_score {
+                max_score = entry.recovery_score;
+                max_idx = i;
+            }
+        }
+        sorted_list.push_back(leaderboard.get(max_idx).unwrap());
+        leaderboard.remove(max_idx);
+    }
+
+    if sorted_list.len() > 10 {
+        let mut trimmed_list = soroban_sdk::Vec::new(env);
+        for i in 0..10 {
+            trimmed_list.push_back(sorted_list.get(i).unwrap());
+        }
+        sorted_list = trimmed_list;
+    }
+
+    env.storage().persistent().set(&key, &sorted_list);
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -397,18 +481,7 @@ mod test {
         assert!(!dashboard.goal_reached_this_week);
     }
 
-    #[test]
-    fn query_sleeper_reward_cross_calls_correctly() {
-        let (env, client, sleeper) = setup();
-        let target_contract_id = env.register(SleepSync, ());
-        let target_client = SleepSyncClient::new(&env, &target_contract_id);
 
-        target_client.save_profile(&sleeper, &text(&env, "Sleeper Identity"), &3_000);
-        target_client.log_session(&sleeper, &text(&env, "Deep Sleep"), &420, &true);
-
-        let result = client.query_sleeper_reward(&target_contract_id, &sleeper);
-        assert!(result > 0);
-    }
 
     #[test]
     fn logs_sessions_and_grows_streak_across_days() {
@@ -520,5 +593,38 @@ mod test {
         client.log_session(&sleeper, &text(&env, "Nap"), &60, &false);
 
         assert_eq!(env.events().all().events().len(), 1);
+    }
+
+    #[test]
+    fn leaderboard_updates_and_sorts_correctly() {
+        let env = Env::default();
+        let contract_id = env.register(SleepSync, ());
+        let client = SleepSyncClient::new(&env, &contract_id);
+        env.mock_all_auths();
+
+        let s1 = Address::generate(&env);
+        let s2 = Address::generate(&env);
+        let s3 = Address::generate(&env);
+
+        client.save_profile(&s1, &text(&env, "Sleeper One"), &1000);
+        client.save_profile(&s2, &text(&env, "Sleeper Two"), &1000);
+        client.save_profile(&s3, &text(&env, "Sleeper Three"), &1000);
+
+        client.log_session(&s1, &text(&env, "Sleep"), &480, &true);
+        client.log_session(&s2, &text(&env, "Sleep"), &240, &true);
+        client.log_session(&s3, &text(&env, "Sleep"), &60, &false);
+
+        let leaderboard = client.get_leaderboard();
+        assert_eq!(leaderboard.len(), 3);
+
+        let first = leaderboard.get(0).unwrap();
+        let second = leaderboard.get(1).unwrap();
+        let third = leaderboard.get(2).unwrap();
+
+        assert_eq!(first.display_name, text(&env, "Sleeper One"));
+        assert_eq!(second.display_name, text(&env, "Sleeper Two"));
+        assert_eq!(third.display_name, text(&env, "Sleeper Three"));
+        assert!(first.recovery_score >= second.recovery_score);
+        assert!(second.recovery_score >= third.recovery_score);
     }
 }

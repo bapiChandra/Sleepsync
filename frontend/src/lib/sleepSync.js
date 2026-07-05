@@ -1,10 +1,5 @@
-import {
-  getAddress,
-  getNetworkDetails,
-  isConnected,
-  setAllowed,
-  signTransaction
-} from "@stellar/freighter-api";
+import { Networks } from "@creit.tech/stellar-wallets-kit";
+import * as FreighterAPI from "@stellar/freighter-api";
 import { contract as StellarContract, rpc, scValToNative } from "@stellar/stellar-sdk";
 import { sleepSyncConfig } from "./contract-config";
 
@@ -14,8 +9,24 @@ const networkLabels = {
   standalone: "Stellar Local"
 };
 
+// Wallet adapter using Freighter API (most common Stellar wallet)
+export const kit = {
+  async getPublicKey() {
+    const result = await FreighterAPI.requestAccess();
+    if (result.error) throw new Error(result.error.message || "Wallet access denied");
+    return result.address;
+  },
+  async sign({ xdr, network }) {
+    const result = await FreighterAPI.signTransaction(xdr, { networkPassphrase: network });
+    if (result.error) throw new Error(result.error.message || "Transaction signing failed");
+    return { signedXDR: result.signedTxXdr };
+  }
+};
+
 export const configuredContractId =
   import.meta.env.VITE_CONTRACT_ID || sleepSyncConfig.fallbackContractId || "";
+export const configuredRewardContractId =
+  import.meta.env.VITE_REWARD_CONTRACT_ID || "";
 export const configuredNetworkPassphrase =
   import.meta.env.VITE_STELLAR_NETWORK_PASSPHRASE ||
   "Test SDF Network ; September 2015";
@@ -66,36 +77,55 @@ async function buildClient(account = "") {
     rpcUrl: configuredRpcUrl,
     networkPassphrase: configuredNetworkPassphrase,
     publicKey: account || undefined,
-    signTransaction
+    signTransaction: async (xdr, opts) => {
+      const { signedXDR } = await kit.sign({
+        xdr,
+        network: opts?.networkPassphrase || configuredNetworkPassphrase
+      });
+      return signedXDR;
+    }
+  });
+}
+
+async function buildRewardClient(account = "") {
+  if (!configuredRewardContractId) {
+    throw new Error("No reward contract ID configured");
+  }
+
+  return StellarContract.Client.from({
+    contractId: configuredRewardContractId,
+    rpcUrl: configuredRpcUrl,
+    networkPassphrase: configuredNetworkPassphrase,
+    publicKey: account || undefined,
+    signTransaction: async (xdr, opts) => {
+      const { signedXDR } = await kit.sign({
+        xdr,
+        network: opts?.networkPassphrase || configuredNetworkPassphrase
+      });
+      return signedXDR;
+    }
   });
 }
 
 async function getWalletSnapshot() {
-  const [addressResult, networkResult] = await Promise.all([getAddress(), getNetworkDetails()]);
-
-  if (addressResult.error) {
-    throw new Error(addressResult.error.message);
+  try {
+    const publicKey = await kit.getPublicKey();
+    return {
+      account: publicKey,
+      network: "testnet",
+      networkPassphrase: configuredNetworkPassphrase,
+      rpcUrl: configuredRpcUrl
+    };
+  } catch (error) {
+    throw new Error(parseError(error));
   }
-
-  if (networkResult.error) {
-    throw new Error(networkResult.error.message);
-  }
-
-  return {
-    account: addressResult.address,
-    network: networkResult.network,
-    networkPassphrase: networkResult.networkPassphrase,
-    rpcUrl: networkResult.sorobanRpcUrl || configuredRpcUrl
-  };
 }
 
 export function hasContractConfig() {
   return Boolean(configuredContractId);
 }
 
-export function isFreighterInstalled() {
-  return typeof window !== "undefined" && (typeof window.freighterApi !== "undefined" || window.stellarWebKit || window.stellar);
-}
+
 
 export function getNetworkLabel(networkPassphrase) {
   return networkLabels[networkPassphrase] || "Custom Stellar Network";
@@ -165,48 +195,43 @@ export function parseError(error) {
     error?.toString?.()
   ].filter(Boolean);
 
-  return candidates[0] || "Something unexpected happened.";
+  const message = candidates[0] || "Something unexpected happened.";
+  
+  if (message.includes("reading 'switch'") || message.includes("switch")) {
+    return "Transaction simulation failed. Please check your inputs and try again.";
+  }
+  
+  return message;
 }
 
 export async function discoverWalletState() {
-  if (!isFreighterInstalled()) {
-    return {
-      account: "",
-      network: "",
-      networkPassphrase: "",
-      rpcUrl: configuredRpcUrl
-    };
+  try {
+    // Try to get existing Freighter address without prompting
+    const result = await FreighterAPI.getAddress();
+    if (!result.error && result.address) {
+      return {
+        account: result.address,
+        network: "testnet",
+        networkPassphrase: configuredNetworkPassphrase,
+        rpcUrl: configuredRpcUrl
+      };
+    }
+  } catch (e) {
+    // No active session — that's OK
   }
-
-  const connection = await isConnected();
-  if (connection.error || !connection.isConnected) {
-    return {
-      account: "",
-      network: "",
-      networkPassphrase: "",
-      rpcUrl: configuredRpcUrl
-    };
-  }
-
-  return getWalletSnapshot();
+  return { account: "", network: "", networkPassphrase: "", rpcUrl: configuredRpcUrl };
 }
 
 export async function connectWallet() {
-  const connection = await isConnected();
-  if (connection.error || !connection.isConnected) {
-    throw new Error("Freighter is not installed in this browser.");
-  }
-
-  const permission = await setAllowed();
-  if (permission.error) {
-    throw new Error(permission.error.message);
-  }
-
-  if (!permission.isAllowed) {
-    throw new Error("Freighter did not grant access to this app.");
-  }
-
-  return getWalletSnapshot();
+  // Request access via Freighter (prompts user to unlock/approve)
+  const result = await FreighterAPI.requestAccess();
+  if (result.error) throw new Error(result.error.message || "Wallet connection failed");
+  return {
+    account: result.address,
+    network: "testnet",
+    networkPassphrase: configuredNetworkPassphrase,
+    rpcUrl: configuredRpcUrl
+  };
 }
 
 export async function readDashboard(account) {
@@ -241,6 +266,19 @@ export async function readRecentSessions(account, limit = 5) {
   return sessionResults;
 }
 
+export async function readLeaderboard() {
+  const client = await buildClient();
+  const tx = await client.get_leaderboard();
+  if (!tx.result) {
+    return [];
+  }
+  return tx.result.map((entry) => ({
+    sleeper: entry.sleeper,
+    displayName: entry.displayName || entry.display_name,
+    recoveryScore: Number(entry.recovery_score)
+  }));
+}
+
 async function submitTransaction(assembledTx) {
   const sentTx = await assembledTx.signAndSend();
   return {
@@ -254,34 +292,91 @@ async function submitTransaction(assembledTx) {
 
 export async function saveProfile(account, displayName, weeklyGoalMinutes) {
   const client = await buildClient(account);
-  const tx = await client.save_profile({
-    sleeper: account,
-    display_name: displayName,
-    weekly_goal_minutes: Number(weeklyGoalMinutes)
-  });
+  let tx;
+  try {
+    tx = await client.save_profile({
+      sleeper: account,
+      display_name: displayName,
+      weekly_goal_minutes: Number(weeklyGoalMinutes)
+    });
+  } catch (err) {
+    if (err.message && err.message.includes('switch')) {
+      console.error("Soroban SDK switch error during simulation. Underlying error:", err);
+      // We often get this when simulation fails on-chain.
+      throw new Error("Transaction simulation failed on-chain. Please verify contract inputs and network state.");
+    }
+    throw err;
+  }
 
   return submitTransaction(tx);
 }
 
 export async function updateWeeklyGoal(account, weeklyGoalMinutes) {
   const client = await buildClient(account);
-  const tx = await client.update_weekly_goal({
-    sleeper: account,
-    new_goal_minutes: Number(weeklyGoalMinutes)
-  });
+  let tx;
+  try {
+    tx = await client.update_weekly_goal({
+      sleeper: account,
+      new_goal_minutes: Number(weeklyGoalMinutes)
+    });
+  } catch (err) {
+    if (err.message && err.message.includes('switch')) {
+      console.error("Soroban SDK switch error:", err);
+      throw new Error("Transaction simulation failed. Check contract state.");
+    }
+    throw err;
+  }
 
   return submitTransaction(tx);
 }
 
 export async function logSession(account, sleepType, minutesSlept, sleptOnTime) {
   const client = await buildClient(account);
-  const tx = await client.log_session({
-    sleeper: account,
-    sleep_type: sleepType,
-    minutes_slept: Number(minutesSlept),
-    slept_on_time: Boolean(sleptOnTime)
-  });
+  let tx;
+  try {
+    tx = await client.log_session({
+      sleeper: account,
+      sleep_type: sleepType,
+      minutes_slept: Number(minutesSlept),
+      slept_on_time: Boolean(sleptOnTime)
+    });
+  } catch (err) {
+    if (err.message && err.message.includes('switch')) {
+      console.error("Soroban SDK switch error:", err);
+      throw new Error("Simulation failed. Make sure you have created a profile first!");
+    }
+    throw err;
+  }
 
+  return submitTransaction(tx);
+}
+
+export async function readStakingDashboard(account) {
+  if (!configuredRewardContractId) return null;
+  const client = await buildRewardClient(account);
+  const balanceTx = await client.balance({ id: account });
+  const stakedTx = await client.staked_balance({ id: account });
+  return {
+    balance: Number(balanceTx.result || 0),
+    staked: Number(stakedTx.result || 0)
+  };
+}
+
+export async function stakeTokens(account, amount) {
+  const client = await buildRewardClient(account);
+  const tx = await client.stake({
+    from: account,
+    amount: Number(amount)
+  });
+  return submitTransaction(tx);
+}
+
+export async function unstakeTokens(account, amount) {
+  const client = await buildRewardClient(account);
+  const tx = await client.unstake({
+    from: account,
+    amount: Number(amount)
+  });
   return submitTransaction(tx);
 }
 

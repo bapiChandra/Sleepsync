@@ -9,7 +9,7 @@
     "dev": "npm --workspace frontend run dev",
     "contract:test": "cargo test",
     "contract:build": "stellar contract build",
-    "contract:wasm": "cargo build --locked --target wasm32v1-none --release -p sleep_sync",
+    "contract:wasm": "cargo build --locked --target wasm32v1-none --release",
     "contract:deploy": "node scripts/deploy-stellar.mjs",
     "export:frontend": "node scripts/export-frontend-config.mjs",
     "build": "npm run contract:build && npm run export:frontend && npm --workspace frontend run build",
